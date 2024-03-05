@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Iterable
 
 import click
-import sqlite3
+
 from gametournament import db
 from gametournament.db import Player
 from gametournament.models import TourneyScore
@@ -12,10 +12,21 @@ from gametournament.rank_scorer import RankScorer
 
 @click.group()
 def cli():
+    """This is a CLI Tool for creating and running rankings for a Board Game Tournament.
+
+    It creates a "meta-score" for each game, whether there are points for the game or only
+    just a set of rankings.
+
+    Rather than being an "elimination" tournament, it calculates an average meta-score across
+    all games.
+
+    In order to run a tournament, you need to run the "init" command to set up the database.
+    After that, you can use the "add-scores" command
+    """
     pass
 
 
-@cli.command()
+@cli.command(short_help="Sets up the tournament database.")
 def init():
     click.echo("Setting up tournament...")
     players = []
@@ -29,10 +40,10 @@ def init():
         db.create_tables(connection, players)
 
 
-@cli.command()
+@cli.command(short_help="Adds scores for a game")
 def add_scores():
     if not db.DB_FILE.exists():
-        raise RuntimeError("You need to run the init command!")
+        raise click.Abort("You need to run the init command!")
 
     with db.get_connection() as connection:
         all_players = db.get_players(connection)
@@ -72,16 +83,21 @@ def pretty_print_game_scores(player_lookup: dict[int, str], scores: Iterable[Tou
         click.echo(f"{key} ->  {value['tournament_score']}")
 
 
-@cli.command()
+@cli.command(short_help="Gets the current rankings/scores for the tournament")
 def get_scores():
+    if not db.DB_FILE.exists():
+        raise click.Abort("You need to run the init command!")
+
     with db.get_connection() as connection:
         current_totals = db.get_scores(connection)
 
     output_scores(current_totals)
 
 
-@cli.command()
+@cli.command(short_help="Gets ALL scores currently entered for the game")
 def log():
+    if not db.DB_FILE.exists():
+        raise click.Abort("You need to run the init command!")
     with db.get_connection() as connection:
         records = db.get_all_records(connection)
 
@@ -92,8 +108,10 @@ def log():
         click.echo(string)
 
 
-@cli.command()
+@cli.command(short_help="Recalculate all scores")
 def recalc():
+    if not db.DB_FILE.exists():
+        raise click.Abort("You need to run the init command!")
     with db.get_connection() as connection:
         records = db.get_all_records(connection)
 
