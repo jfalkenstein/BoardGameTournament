@@ -1,3 +1,4 @@
+```
 Usage: game-tournament [OPTIONS] COMMAND [ARGS]...
 
   This is a CLI Tool for creating and running rankings for a Board Game
@@ -21,3 +22,4 @@ Commands:
   init        Sets up the tournament database.
   log         Gets ALL scores currently entered for the game
   recalc      Recalculate all scores
+```
