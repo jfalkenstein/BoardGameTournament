@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "gametournament"
+version = "0.1.0"
+description = ""
+authors = ["Jon Falkenstein <jtfalkenstein@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "~3.12.0"
+click = "^8.1.7"
+
+[tool.poetry.scripts]
+game-tournament = 'main:cli'
+
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.22.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

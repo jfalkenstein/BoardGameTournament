@@ -1,0 +1,60 @@
+import statistics
+
+import click
+
+from gametournament import utils
+from gametournament.base_scorer import BaseScorer
+from gametournament.constants import HOURS_PER_INCREMENT
+from gametournament.db import Player
+from gametournament.models import TourneyScore
+
+
+class RankScorer(BaseScorer):
+
+    def score(self) -> dict[int, TourneyScore]:
+        ranks_available = list(map(str, range(1, len(self.players) + 1)))
+        ranks = []
+        for player in self.players:
+            rank = click.prompt(
+                f"What was the rank for player {player['name']} (lower is better)?",
+                show_choices=True,
+                type=click.Choice(ranks_available),
+            )
+            ranks.append((player['id'], int(rank)))
+
+        sorted_by_rank = sorted(ranks, key=lambda x: x[1])
+
+        next_rank = len(sorted_by_rank) + 1
+        last_seen_rank = None
+        for i in range(len(ranks) - 1, 0, -1):
+            player_id, rank = sorted_by_rank[i]
+            if rank == last_seen_rank:
+                sorted_by_rank[i] = (player_id, next_rank)
+            else:
+                next_rank -= 1
+                sorted_by_rank[i] = (player_id, next_rank)
+                last_seen_rank = rank
+        return self.calculate(sorted_by_rank)
+
+    def calculate(self, scores: list[tuple[int, float]]) -> dict[int, TourneyScore]:
+        player_scores = {}
+        game_ranks = [r[1] for r in scores]
+        mean, std = utils.calculate_mean_and_std(tuple(game_ranks))
+        click.echo(f"Standard deviation of ranks: {std}; Mean: {mean}")
+        last_score = None
+        last_rank = None
+        for player_id, rank in scores:
+            if rank == last_rank:
+                player_scores[player_id] = TourneyScore(player_id=player_id, tournament_score=last_score, game_score=last_rank, game_score_type='rank')
+                continue
+
+            last_rank = rank
+            inverse_rank = len(self.players) - rank
+            bonus = utils.calculate_bonus(game_ranks, inverse_rank)
+            last_score = utils.calculate_score(inverse_rank, self.duration_multiplier, bonus)
+            player_scores[player_id] = TourneyScore(player_id=player_id, tournament_score=last_score, game_score=last_rank, game_score_type='rank')
+
+        click.echo(
+            f"Formula: (2 * inverse rank * {self.duration_multiplier} {{duration_multiplier}}) + {{std deviations from avg}}"
+        )
+        return player_scores
