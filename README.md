@@ -17,9 +17,7 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  add-scores  Adds scores for a game
-  get-scores  Gets the current rankings/scores for the tournament
   init        Sets up the tournament database.
-  log         Gets ALL scores currently entered for the game
-  recalc      Recalculate all scores
+  scores      Commands for working with scores
+  tournament  Commands related to tournaments
 ```
