@@ -2,3 +2,4 @@ __pycache__
 .idea
 tournament.db
 .python-version
+tournament-context.json
