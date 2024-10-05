@@ -15,9 +15,13 @@ def get_current_tournament() -> Tournament:
         raise RuntimeError("Tournament context file doesn't exist. You must set the current tournament")
 
     with TOURNAMENT_FILE.open(mode="r") as f:
-        return json.load(f)
-
+        loaded: Tournament = json.load(f, object_hook=decode_datetimes)
+    return loaded
 
 def encode_datetime(obj):
     if isinstance(obj, datetime):
         return obj.isoformat()
+
+def decode_datetimes(object_dict) -> Tournament:
+    object_dict['start_date'] = datetime.fromisoformat(object_dict['start_date'])
+    return object_dict

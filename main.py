@@ -11,7 +11,7 @@ import yaml
 
 from gametournament import db, tournament_tools
 from gametournament.db import DB_FILE
-from gametournament.models import TourneyScore, Player
+from gametournament.models import TourneyScore, Player, Tournament
 from gametournament.point_scorer import PointScorer
 from gametournament.rank_scorer import RankScorer
 
@@ -23,6 +23,15 @@ def require_dbfile[**P, R](func: Callable[Concatenate[sqlite3.Connection, P], R]
             raise click.Abort("You need to run the init command!")
         with db.get_connection() as connection:
             return func(connection, *args,  **kwargs)
+    return wrapper
+
+def require_current_tournament[**P, R](func: Callable[Concatenate[Tournament, P], R]) -> Callable[P, R]:
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        tournament = tournament_tools.get_current_tournament()
+        if tournament is None:
+            raise click.Abort("No currently selected tournament")
+        return func(tournament, *args, **kwargs)
     return wrapper
 
 @click.group()
@@ -65,15 +74,13 @@ def create_tournament(connection: sqlite3.Connection, name: str):
     tournament_tools.set_current_tournament(tournament)
 
 @cli.command(short_help="Gets current tournament info")
-def get_tournament():
-    tournament = tournament_tools.get_current_tournament()
-    if tournament is None:
-        click.echo("No currently selected tournament")
-    else:
-        click.echo("Current Tournament:")
-        as_yaml = yaml.dump(tournament)
-        indented = textwrap.indent(as_yaml, '\t')
-        click.echo(indented)
+@require_current_tournament
+def get_tournament(tournament: Tournament):
+    click.echo("Current Tournament:")
+    click.echo("-" * 20)
+    as_yaml = yaml.dump(tournament)
+    indented = textwrap.indent(as_yaml, '>>')
+    click.echo(indented)
 
 @cli.command(short_help="Selects a pre-existing tournament as the current tournament")
 @require_dbfile
@@ -103,9 +110,9 @@ def select_tournament(connection: sqlite3.Connection):
 
 @cli.command(short_help="Adds scores for a game")
 @require_dbfile
-def add_scores(connection: sqlite3.Connection):
-    current_tournament = tournament_tools.get_current_tournament()
-    all_players = db.get_players(connection, current_tournament['id'])
+@require_current_tournament
+def add_scores(tournament: Tournament, connection: sqlite3.Connection):
+    all_players = db.get_players(connection, tournament['id'])
 
     game = click.prompt("What game was it?")
     hours = click.prompt("How many hours did you play it?", type=float)
@@ -129,8 +136,8 @@ def add_scores(connection: sqlite3.Connection):
 
     click.confirm(f"\n{'-' * 20}\nDo you want to record these scores?", default=True, abort=True)
 
-    db.record_scores(connection, current_tournament['id'], game, hours, scores.values())
-    current_totals = db.get_scores(connection, current_tournament['id'])
+    db.record_scores(connection, tournament['id'], game, hours, scores.values())
+    current_totals = db.get_scores(connection, tournament['id'])
 
     output_scores(current_totals)
 
@@ -143,17 +150,17 @@ def pretty_print_game_scores(player_lookup: dict[int, str], scores: Iterable[Tou
 
 @cli.command(short_help="Gets the current rankings/scores for the tournament")
 @require_dbfile
-def get_scores(connection: sqlite3.Connection):
-    current_tournament = tournament_tools.get_current_tournament()
-    current_totals = db.get_scores(connection, current_tournament['id'])
+@require_current_tournament
+def get_scores(tournament: Tournament, connection: sqlite3.Connection):
+    current_totals = db.get_scores(connection, tournament['id'])
     output_scores(current_totals)
 
 
 @cli.command(short_help="Gets ALL scores currently entered for the game")
 @require_dbfile
-def log(connection: sqlite3.Connection):
-    current_tournament = tournament_tools.get_current_tournament()
-    records = db.get_all_records(connection, current_tournament['id'])
+@require_current_tournament
+def log(tournament: Tournament, connection: sqlite3.Connection):
+    records = db.get_all_records(connection, tournament['id'])
 
     for record in records:
         string = ""
@@ -164,9 +171,8 @@ def log(connection: sqlite3.Connection):
 
 @cli.command(short_help="Recalculate all scores")
 @require_dbfile
-def recalc(connection: sqlite3.Connection):
-    current_tournament = tournament_tools.get_current_tournament()
-    records = db.get_all_records(connection, current_tournament['id'])
+def recalc(tournament: Tournament, connection: sqlite3.Connection):
+    records = db.get_all_records(connection, tournament['id'])
 
     player_lookup = {}
     games_to_hours = {}
@@ -204,7 +210,7 @@ def recalc(connection: sqlite3.Connection):
         for game, scores in new_scores.items():
             db.update_scores(connection, scores)
 
-        current_totals = db.get_scores(connection, current_tournament['id'])
+        current_totals = db.get_scores(connection, tournament['id'])
         output_scores(current_totals)
 
 
