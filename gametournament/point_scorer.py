@@ -20,7 +20,7 @@ class PointScorer(BaseScorer):
     def calculate(self, scores: list[tuple[int, float]]) -> dict[int, TourneyScore]:
 
         player_scores = {}
-        current_inverse_rank = len(scores)
+        current_inverse_rank = len(scores) + 1
         game_scores = [s[1] for s in scores]
         mean, std = utils.calculate_mean_and_std(tuple(game_scores))
         click.echo(f"Standard deviation: {std}; Mean: {mean}")

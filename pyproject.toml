@@ -17,6 +17,7 @@ game-tournament = 'main:cli'
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.22.1"
+pdbpp = "^0.10.3"
 
 [build-system]
 requires = ["poetry-core"]

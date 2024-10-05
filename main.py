@@ -179,6 +179,7 @@ def log(tournament: Tournament, connection: sqlite3.Connection):
 
 @scores.command(short_help="Recalculate all scores")
 @require_dbfile
+@require_current_tournament
 def recalc(tournament: Tournament, connection: sqlite3.Connection):
     records = db.get_all_records(connection, tournament['id'])
 
