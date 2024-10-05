@@ -69,8 +69,8 @@ def create_tournament(connection: sqlite3.Connection, name: str, start_date: dat
 
 def get_tournaments(connection: sqlite3.Connection) -> list[Tournament]:
     cursor = connection.cursor()
-    cursor.execute("SELECT * FROM tournaments;")
-    results: list[sqlite3.Row] = cursor.fetchmany()
+    cursor.execute("SELECT * FROM tournaments ORDER BY start_date DESC;")
+    results: list[sqlite3.Row] = cursor.fetchall()
     tournaments = [Tournament(result) for result in results]
     return tournaments
 
@@ -100,11 +100,11 @@ def get_scores(connection: sqlite3.Connection, tournament_id: int) -> list[tuple
     query = """
     SELECT p.id, 
         p.name, 
-        sum(s.score) as total_score, 
-        count(*) as game_count, 
-        sum(s.score)/count(*) as average_score
+        sum(coalesce(s.score, 0)) as total_score, 
+        coalesce(count(s.score_id), 0) as game_count, 
+        coalesce(sum(s.score)/count(s.score_id), 0) as average_score
     FROM players as p
-    JOIN scores as s ON s.player_id = p.id
+    LEFT JOIN scores as s ON s.player_id = p.id
     WHERE p.tournament_id = ?
     GROUP BY p.id, p.name
     ORDER BY average_score desc

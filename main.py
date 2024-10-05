@@ -60,10 +60,10 @@ def init():
         db.create_tables(connection)
 
 @cli.group(short_help="Commands related to tournaments")
-def tournaments():
+def tournament():
     pass
 
-@tournaments.command(short_help="Creates a new tournament")
+@tournament.command(short_help="Creates a new tournament")
 @click.argument("name")
 @require_dbfile
 def new(connection: sqlite3.Connection, name: str):
@@ -77,16 +77,22 @@ def new(connection: sqlite3.Connection, name: str):
     db.insert_players(connection, tournament['id'], players)
     tournament_tools.set_current_tournament(tournament)
 
-@tournaments.command(short_help="Gets current tournament info")
+@tournament.command(short_help="Gets current tournament info")
+@require_dbfile
 @require_current_tournament
-def get(tournament: Tournament):
+def get(tournament: Tournament, connection: sqlite3.Connection):
     click.echo("Current Tournament:")
     click.echo("-" * 20)
     as_yaml = yaml.dump(tournament)
-    indented = textwrap.indent(as_yaml, '>>')
+    indented = textwrap.indent(as_yaml, '>> ')
     click.echo(indented)
+    click.echo("Tournament Players:")
+    click.echo("-" * 20)
+    players = db.get_players(connection, tournament['id'])
+    for player in players:
+        click.echo(f">> {player['name']}")
 
-@tournaments.command(short_help="Selects a pre-existing tournament as the current tournament")
+@tournament.command(short_help="Selects a pre-existing tournament as the current tournament")
 @require_dbfile
 def select(connection: sqlite3.Connection):
     tournaments = db.get_tournaments(connection)
@@ -97,7 +103,7 @@ def select(connection: sqlite3.Connection):
         click.echo("No tournaments to select")
         raise click.Abort()
 
-    for tournament in sorted(tournaments, key=lambda x: x['start_date'], reverse=True):
+    for tournament in tournaments:
         tournament_map[tournament['id']] = tournament
         tournament_selection += f'* {tournament["start_date"]}\tID: {tournament["id"]}\t{tournament["name"]}\n'
 
@@ -109,8 +115,20 @@ def select(connection: sqlite3.Connection):
 
     tournament_id = click.prompt("Which id do you want to select?", type=click.INT)
     tournament = tournament_map[tournament_id]
-    click.echo(f"Setting tournament named {tournament["name"]} as current tournament.")
+    click.echo(f"Setting tournament named \"{tournament["name"]}\" as current tournament.")
     tournament_tools.set_current_tournament(tournament)
+
+@tournament.command(short_help="Adds a player to a tournament")
+@click.argument("player-name")
+@require_dbfile
+@require_current_tournament
+def add_player(tournament: Tournament, connection: sqlite3.Connection, player_name):
+    player_name = player_name.strip()
+    if player_name == "":
+        raise click.Abort("Invalid player name!")
+
+    db.insert_players(connection, tournament['id'], [player_name])
+    click.echo(f"Player {player_name} added to tournament: {tournament['name']}")
 
 @cli.group(short_help="Commands for working with scores")
 def scores():
@@ -164,7 +182,7 @@ def get(tournament: Tournament, connection: sqlite3.Connection):
     output_scores(current_totals)
 
 
-@tournaments.command(short_help="Gets ALL scores currently entered for the tournament")
+@tournament.command(short_help="Gets ALL scores currently entered for the tournament")
 @require_dbfile
 @require_current_tournament
 def log(tournament: Tournament, connection: sqlite3.Connection):
