@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
 from gametournament.constants import HOURS_PER_INCREMENT
-from gametournament.db import Player
-from gametournament.models import TourneyScore
+from gametournament.models import TourneyScore, Player
 
 
 class BaseScorer(ABC):

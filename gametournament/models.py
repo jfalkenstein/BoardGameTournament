@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TypedDict, Literal, NotRequired
 
 
@@ -9,3 +10,11 @@ class TourneyScore(TypedDict):
     score_id: NotRequired[int]
 
 
+class Tournament(TypedDict):
+    name: str
+    start_date: datetime
+    id: int
+
+class Player(TypedDict):
+    id: int
+    name: str

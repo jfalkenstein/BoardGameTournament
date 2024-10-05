@@ -1,8 +1,9 @@
 import sqlite3
+from datetime import datetime
 from pathlib import Path
-from typing import TypedDict, Iterable
+from typing import Iterable
 
-from gametournament.models import TourneyScore
+from gametournament.models import TourneyScore, Tournament, Player
 
 DB_FILE = Path(__file__).parent.parent / "tournament.db"
 
@@ -13,19 +14,30 @@ def get_connection():
     return connection
 
 
-def create_tables(connection: sqlite3.Connection, players: list[str]):
+def create_tables(connection: sqlite3.Connection):
     cursor = connection.cursor()
+
+    cursor.execute("DROP TABLE IF EXISTS tournaments;")
+    cursor.execute("""
+        CREATE TABLE tournaments (
+            id integer PRIMARY KEY,
+            name TEXT NOT NULL,
+            start_date TEXT NOT NULL
+        );
+    """)
+
     cursor.execute("DROP TABLE IF EXISTS players;")
     cursor.execute(
         """
-        CREATE TABLE if not exists players (
+        CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
+            tournament_id INTEGER NOT NULL,
+            FOREIGN KEY (tournament_id) REFERENCES tournaments(id)
         );
         """
     )
 
-    cursor.executemany(f"INSERT INTO players(id, name) VALUES (NULL, ?)", [(p,) for p in players])
     cursor.execute("DROP TABLE IF EXISTS scores")
     cursor.execute("""
         CREATE TABLE scores (
@@ -36,47 +48,69 @@ def create_tables(connection: sqlite3.Connection, players: list[str]):
             score REAL NOT NULL,
             points_or_rank INTEGER NOT NULL,
             game_score_type TEXT NOT NULL,
-            FOREIGN KEY (player_id) REFERENCES players(id)
+            tournament_id INTEGER NOT NULL,
+            FOREIGN KEY (player_id) REFERENCES players(id),
+            FOREIGN KEY (tournament_id) REFERENCES tournaments(id)
         );
     """)
 
-
-class Player(TypedDict):
-    id: int
-    name: str
-
-
-def get_players(connection: sqlite3.Connection) -> list[Player]:
+def insert_players(connection: sqlite3.Connection, tournament_id: int, player_names: list[str]):
     cursor = connection.cursor()
-    cursor.execute("SELECT id, name FROM players;")
+    cursor.executemany("""
+        INSERT INTO players(name, tournament_id)
+        VALUES (?, ?)
+    """, [(name, tournament_id) for name in player_names])
+
+def create_tournament(connection: sqlite3.Connection, name: str, start_date: datetime) -> Tournament:
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO tournaments(name, start_date) VALUES (?, ?) RETURNING id;", (name, start_date.isoformat()))
+    result = cursor.fetchone()
+    return Tournament(name=name, start_date=start_date, id=result["id"])
+
+def get_tournaments(connection: sqlite3.Connection) -> list[Tournament]:
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM tournaments;")
+    results: list[sqlite3.Row] = cursor.fetchmany()
+    tournaments = [Tournament(result) for result in results]
+    return tournaments
+
+
+def get_players(connection: sqlite3.Connection, tournament_id: int) -> list[Player]:
+    cursor = connection.cursor()
+    cursor.execute("SELECT id, name FROM players WHERE tournament_id = ?;", (tournament_id,))
     rows: list[sqlite3.Row] = cursor.fetchall()
     players = [Player(r) for r in rows]
     return players
 
 
-def record_scores(connection: sqlite3.Connection, game: str, hours: float, scores: Iterable[TourneyScore]):
+def record_scores(connection: sqlite3.Connection, tournament_id: int, game: str, hours: float, scores: Iterable[TourneyScore]):
     cursor = connection.cursor()
     params = [
-        (game, hours, score['player_id'], score['tournament_score'], score['game_score'])
+        (game, hours, score['player_id'], score['tournament_score'], tournament_id, score['game_score'])
         for score in scores
     ]
     query = """
-        INSERT INTO scores(game, hours, player_id, score, points_or_rank)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO scores(game, hours, player_id, score, tournament_id, points_or_rank)
+        VALUES (?, ?, ?, ?, ?, ?)
     """
     cursor.executemany(query, params)
 
 
-def get_scores(connection: sqlite3.Connection) -> list[tuple[Player, float, int, float]]:
+def get_scores(connection: sqlite3.Connection, tournament_id: int) -> list[tuple[Player, float, int, float]]:
     query = """
-    SELECT p.id, p.name, sum(s.score) as total_score, count(*) as game_count, sum(s.score)/count(*) as average_score
+    SELECT p.id, 
+        p.name, 
+        sum(s.score) as total_score, 
+        count(*) as game_count, 
+        sum(s.score)/count(*) as average_score
     FROM players as p
     JOIN scores as s ON s.player_id = p.id
+    WHERE p.tournament_id = ?
     GROUP BY p.id, p.name
     ORDER BY average_score desc
     """
     cursor = connection.cursor()
-    cursor.execute(query)
+    cursor.execute(query, (tournament_id,))
     results = []
     for row in cursor:
         player = Player(id=row[0], name=row[1])
@@ -85,13 +119,15 @@ def get_scores(connection: sqlite3.Connection) -> list[tuple[Player, float, int,
     return results
 
 
-def get_all_records(connection: sqlite3.Connection) -> list[sqlite3.Row]:
+def get_all_records(connection: sqlite3.Connection, tournament_id: int) -> list[sqlite3.Row]:
     query = """
-        SELECT players.name, scores.* FROM scores
-        JOIN players ON scores.player_id = players.id;
+        SELECT players.name, scores.* 
+        FROM scores
+        JOIN players ON scores.player_id = players.id
+        WHERE players.tournament_id = ?;
     """
     cursor = connection.cursor()
-    cursor.execute(query)
+    cursor.execute(query, (tournament_id,))
     return cursor.fetchall()
 
 
