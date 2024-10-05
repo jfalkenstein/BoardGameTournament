@@ -59,10 +59,14 @@ def init():
     with db.get_connection() as connection:
         db.create_tables(connection)
 
-@cli.command(short_help="Creates a new tournament")
+@cli.group(short_help="Commands related to tournaments")
+def tournaments():
+    pass
+
+@tournaments.command(short_help="Creates a new tournament")
 @click.argument("name")
 @require_dbfile
-def create_tournament(connection: sqlite3.Connection, name: str):
+def new(connection: sqlite3.Connection, name: str):
     tournament = db.create_tournament(connection, name, datetime.now())
     players = []
     while True:
@@ -73,18 +77,18 @@ def create_tournament(connection: sqlite3.Connection, name: str):
     db.insert_players(connection, tournament['id'], players)
     tournament_tools.set_current_tournament(tournament)
 
-@cli.command(short_help="Gets current tournament info")
+@tournaments.command(short_help="Gets current tournament info")
 @require_current_tournament
-def get_tournament(tournament: Tournament):
+def get(tournament: Tournament):
     click.echo("Current Tournament:")
     click.echo("-" * 20)
     as_yaml = yaml.dump(tournament)
     indented = textwrap.indent(as_yaml, '>>')
     click.echo(indented)
 
-@cli.command(short_help="Selects a pre-existing tournament as the current tournament")
+@tournaments.command(short_help="Selects a pre-existing tournament as the current tournament")
 @require_dbfile
-def select_tournament(connection: sqlite3.Connection):
+def select(connection: sqlite3.Connection):
     tournaments = db.get_tournaments(connection)
     tournament_map = {}
     tournament_selection = "Select tournament by id\n"
@@ -108,10 +112,14 @@ def select_tournament(connection: sqlite3.Connection):
     click.echo(f"Setting tournament named {tournament["name"]} as current tournament.")
     tournament_tools.set_current_tournament(tournament)
 
-@cli.command(short_help="Adds scores for a game")
+@cli.group(short_help="Commands for working with scores")
+def scores():
+    pass
+
+@scores.command(short_help="Adds scores for a game")
 @require_dbfile
 @require_current_tournament
-def add_scores(tournament: Tournament, connection: sqlite3.Connection):
+def record(tournament: Tournament, connection: sqlite3.Connection):
     all_players = db.get_players(connection, tournament['id'])
 
     game = click.prompt("What game was it?")
@@ -131,7 +139,7 @@ def add_scores(tournament: Tournament, connection: sqlite3.Connection):
 
     scores = scorer.score()
     player_lookup = {player['id']: player['name'] for player in players}
-    click.echo(f"\n{'-' * 20}\nHere are the scores for that game:")
+    click.echo(f"\n{'-' * 20}\nHere are the meta-scores for that game:")
     pretty_print_game_scores(player_lookup, scores.values())
 
     click.confirm(f"\n{'-' * 20}\nDo you want to record these scores?", default=True, abort=True)
@@ -148,15 +156,15 @@ def pretty_print_game_scores(player_lookup: dict[int, str], scores: Iterable[Tou
         click.echo(f"{key} ->  {value['tournament_score']}")
 
 
-@cli.command(short_help="Gets the current rankings/scores for the tournament")
+@scores.command(short_help="Gets the current rankings/scores for the tournament")
 @require_dbfile
 @require_current_tournament
-def get_scores(tournament: Tournament, connection: sqlite3.Connection):
+def get(tournament: Tournament, connection: sqlite3.Connection):
     current_totals = db.get_scores(connection, tournament['id'])
     output_scores(current_totals)
 
 
-@cli.command(short_help="Gets ALL scores currently entered for the game")
+@tournaments.command(short_help="Gets ALL scores currently entered for the tournament")
 @require_dbfile
 @require_current_tournament
 def log(tournament: Tournament, connection: sqlite3.Connection):
@@ -169,7 +177,7 @@ def log(tournament: Tournament, connection: sqlite3.Connection):
         click.echo(string)
 
 
-@cli.command(short_help="Recalculate all scores")
+@scores.command(short_help="Recalculate all scores")
 @require_dbfile
 def recalc(tournament: Tournament, connection: sqlite3.Connection):
     records = db.get_all_records(connection, tournament['id'])
@@ -217,7 +225,7 @@ def recalc(tournament: Tournament, connection: sqlite3.Connection):
 def output_scores(current_totals):
     click.echo(f"\n{'-' * 20}\nHere are the running total scores:")
     for player, score, game_count, avg_score in current_totals:
-        click.echo(f'{player["name"]} -> avg: {avg_score}, total: {score}, games: {game_count}')
+        click.echo(f'{player["name"]} -> avg: {round(avg_score, 3)}, total: {round(score, 3)}, games: {game_count}')
 
 
 

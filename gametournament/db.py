@@ -86,12 +86,12 @@ def get_players(connection: sqlite3.Connection, tournament_id: int) -> list[Play
 def record_scores(connection: sqlite3.Connection, tournament_id: int, game: str, hours: float, scores: Iterable[TourneyScore]):
     cursor = connection.cursor()
     params = [
-        (game, hours, score['player_id'], score['tournament_score'], tournament_id, score['game_score'])
+        (game, hours, score['player_id'], score['tournament_score'], tournament_id, score['game_score'], score['game_score_type'])
         for score in scores
     ]
     query = """
-        INSERT INTO scores(game, hours, player_id, score, tournament_id, points_or_rank)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO scores(game, hours, player_id, score, tournament_id, points_or_rank, game_score_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     """
     cursor.executemany(query, params)
 

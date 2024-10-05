@@ -3,7 +3,7 @@ import statistics
 from functools import lru_cache
 
 @lru_cache()
-def calculate_mean_and_std(all_game_scores):
+def calculate_mean_and_std(all_game_scores: tuple[float, ...]):
     mean = statistics.mean(all_game_scores)
     std = statistics.stdev(all_game_scores, mean)
     return mean, std
