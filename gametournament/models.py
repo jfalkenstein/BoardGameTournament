@@ -14,6 +14,9 @@ class Tournament(TypedDict):
     name: str
     start_date: datetime
     id: int
+    rank_multiplier: int | float
+    duration_multiplier: int | float
+    apply_bonus_or_penalty: bool
 
 class Player(TypedDict):
     id: int

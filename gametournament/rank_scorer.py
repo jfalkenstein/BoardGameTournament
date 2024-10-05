@@ -38,8 +38,6 @@ class RankScorer(BaseScorer):
     def calculate(self, scores: list[tuple[int, float]]) -> dict[int, TourneyScore]:
         player_scores = {}
         ranks_as_scores = [r[1] * 10 for r in scores]
-        mean, std = utils.calculate_mean_and_std(tuple(ranks_as_scores))
-        click.echo(f"Standard deviation of (ranks * 10): {std}; Mean: {mean}")
         last_score = None
         last_rank = None
         for player_id, rank in scores:
@@ -54,16 +52,11 @@ class RankScorer(BaseScorer):
 
             last_rank = rank
             inverse_rank = len(self.players) - int(rank) + 1
-            bonus = utils.calculate_bonus(ranks_as_scores, inverse_rank)
-            last_score = utils.calculate_score(inverse_rank, self.duration_multiplier, bonus)
+            last_score = self.make_score(inverse_rank, ranks_as_scores, inverse_rank * 10)
             player_scores[player_id] = TourneyScore(
                 player_id=player_id,
                 tournament_score=last_score,
                 game_score=last_rank,
                 game_score_type='rank',
             )
-
-        click.echo(
-            f"Formula: (2 * {{inverse rank}} * {self.duration_multiplier} {{duration_multiplier}}) + {{std deviations from avg}}"
-        )
         return player_scores

@@ -22,7 +22,10 @@ def create_tables(connection: sqlite3.Connection):
         CREATE TABLE tournaments (
             id integer PRIMARY KEY,
             name TEXT NOT NULL,
-            start_date TEXT NOT NULL
+            start_date TEXT NOT NULL,
+            rank_multiplier REAL NOT NULL,
+            duration_multiplier REAL NOT NULL,
+            apply_bonus_or_penalty BOOLEAN NOT NULL
         );
     """)
 
@@ -61,11 +64,30 @@ def insert_players(connection: sqlite3.Connection, tournament_id: int, player_na
         VALUES (?, ?)
     """, [(name, tournament_id) for name in player_names])
 
-def create_tournament(connection: sqlite3.Connection, name: str, start_date: datetime) -> Tournament:
+def create_tournament(connection: sqlite3.Connection, tournament: Tournament) -> Tournament:
     cursor = connection.cursor()
-    cursor.execute("INSERT INTO tournaments(name, start_date) VALUES (?, ?) RETURNING id;", (name, start_date.isoformat()))
+    sql = """
+    INSERT INTO tournaments(
+        name, 
+        start_date, 
+        rank_multiplier, 
+        duration_multiplier, 
+        apply_bonus_or_penalty
+    ) 
+    VALUES (?, ?, ?, ?, ?) 
+    RETURNING id;
+    """
+    params = (
+        tournament['name'],
+        tournament['start_date'],
+        tournament['rank_multiplier'],
+        tournament['duration_multiplier'],
+        tournament['apply_bonus_or_penalty']
+    )
+    cursor.execute(sql, params)
     result = cursor.fetchone()
-    return Tournament(name=name, start_date=start_date, id=result["id"])
+    tournament['id'] = result['id']
+    return tournament
 
 def get_tournaments(connection: sqlite3.Connection) -> list[Tournament]:
     cursor = connection.cursor()

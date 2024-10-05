@@ -1,4 +1,3 @@
-import dataclasses
 import functools
 import sqlite3
 import textwrap
@@ -65,9 +64,41 @@ def tournament():
 
 @tournament.command(short_help="Creates a new tournament")
 @click.argument("name")
+@click.option(
+    '-r',
+    '--rank-multiplier',
+    type=click.FLOAT,
+    default=2,
+    show_default=True,
+    help="Multiplier to apply to the INVERSE rank for a game",
+    prompt=True
+)
+@click.option(
+    '-d',
+    '--duration-multiplier',
+    type=click.FLOAT,
+    default=1,
+    show_default=True,
+    help="Multiplier to apply to the number of game hours. Set this to 0 if you don't want to apply duration bonus.",
+    prompt=True,
+)
+@click.option(
+    '--bonus/--no-bonus', '/-B',
+    default=True,
+    show_default=True,
+    help="Whether to apply a bonus or penalty to metascores on basis of standard deviations from average",
+    prompt=True,
+)
 @require_dbfile
-def new(connection: sqlite3.Connection, name: str):
-    tournament = db.create_tournament(connection, name, datetime.now())
+def new(connection: sqlite3.Connection, name: str, rank_multiplier: float, duration_multiplier: float, bonus: bool):
+    tournament = Tournament(
+        name=name,
+        start_date=datetime.now(),
+        rank_multiplier=rank_multiplier,
+        duration_multiplier=duration_multiplier,
+        apply_bonus_or_penalty=bonus
+    )
+    tournament = db.create_tournament(connection, tournament)
     players = []
     while True:
         player = click.prompt("Enter player name or hit enter if finished", default="", show_default=False)
@@ -151,11 +182,15 @@ def record(tournament: Tournament, connection: sqlite3.Connection):
                 players.append(player)
 
     if click.confirm("Did the game have points?", default=True):
-        scorer = PointScorer(players, hours)
+        scorer = PointScorer(tournament, players, hours)
     else:
-        scorer = RankScorer(players, hours)
+        scorer = RankScorer(tournament, players, hours)
 
     scores = scorer.score()
+    formula = scorer.get_formula()
+
+    click.echo(f"Metascore formula:\n\t{formula}")
+
     player_lookup = {player['id']: player['name'] for player in players}
     click.echo(f"\n{'-' * 20}\nHere are the meta-scores for that game:")
     pretty_print_game_scores(player_lookup, scores.values())
@@ -222,9 +257,9 @@ def recalc(tournament: Tournament, connection: sqlite3.Connection):
             for score in scores
         ]
         if scores[0]['game_score_type'] == 'points':
-            scorer = PointScorer(players, games_to_hours[game])
+            scorer = PointScorer(tournament, players, games_to_hours[game])
         else:
-            scorer = RankScorer(players, games_to_hours[game])
+            scorer = RankScorer(tournament, players, games_to_hours[game])
         new_scores[game] = scorer.recalculate(scores)
 
     for game, scores in new_scores.items():
