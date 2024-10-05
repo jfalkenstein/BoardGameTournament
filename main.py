@@ -9,6 +9,7 @@ import click
 import yaml
 
 from gametournament import db, tournament_tools
+from gametournament.constants import DEFAULT_DURATION_MULTIPLIER, DEFAULT_RANK_MULTIPLIER
 from gametournament.db import DB_FILE
 from gametournament.models import TourneyScore, Player, Tournament
 from gametournament.point_scorer import PointScorer
@@ -68,7 +69,7 @@ def tournament():
     '-r',
     '--rank-multiplier',
     type=click.FLOAT,
-    default=2,
+    default=DEFAULT_RANK_MULTIPLIER,
     show_default=True,
     help="Multiplier to apply to the INVERSE rank for a game",
     prompt=True
@@ -77,13 +78,13 @@ def tournament():
     '-d',
     '--duration-multiplier',
     type=click.FLOAT,
-    default=1,
+    default=DEFAULT_DURATION_MULTIPLIER,
     show_default=True,
     help="Multiplier to apply to the number of game hours. Set this to 0 if you don't want to apply duration bonus.",
     prompt=True,
 )
 @click.option(
-    '--bonus/--no-bonus', '/-B',
+    '--bonus/--no-bonus',
     default=True,
     show_default=True,
     help="Whether to apply a bonus or penalty to metascores on basis of standard deviations from average",
