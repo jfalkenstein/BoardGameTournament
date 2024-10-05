@@ -1,11 +1,8 @@
-import statistics
-
 import click
 
-from gametournament import utils
-from gametournament.constants import HOURS_PER_INCREMENT
-from gametournament.models import TourneyScore, Player
 from gametournament.base_scorer import BaseScorer
+from gametournament.models import TourneyScore
+
 
 class PointScorer(BaseScorer):
 

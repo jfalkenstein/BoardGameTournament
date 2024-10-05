@@ -1,7 +1,6 @@
 import statistics
 from abc import ABC, abstractmethod
 
-from gametournament.constants import HOURS_PER_INCREMENT
 from gametournament.models import TourneyScore, Player, Tournament
 
 
