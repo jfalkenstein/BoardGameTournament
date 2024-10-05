@@ -11,6 +11,7 @@ from gametournament.models import TourneyScore, Player
 class RankScorer(BaseScorer):
 
     def score(self) -> dict[int, TourneyScore]:
+        """This function converts raw ranks (that might end up tied) to "scores" that can be added to the metascore."""
         ranks_available = list(map(str, range(1, len(self.players) + 1)))
         ranks = []
         for player in self.players:
@@ -63,6 +64,6 @@ class RankScorer(BaseScorer):
             )
 
         click.echo(
-            f"Formula: (2 * inverse rank * {self.duration_multiplier} {{duration_multiplier}}) + {{std deviations from avg}}"
+            f"Formula: (2 * {{inverse rank}} * {self.duration_multiplier} {{duration_multiplier}}) + {{std deviations from avg}}"
         )
         return player_scores

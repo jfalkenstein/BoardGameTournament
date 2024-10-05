@@ -42,7 +42,7 @@ class PointScorer(BaseScorer):
             last_score = utils.calculate_score(current_inverse_rank, self.duration_multiplier, bonus)
             player_scores[player_id] = TourneyScore(player_id=player_id, tournament_score=last_score, game_score=points, game_score_type='points')
         click.echo(
-            f"Formula: (2 * inverse rank * {self.duration_multiplier} {{duration_multiplier}}) + {{std deviations from avg}}"
+            f"Formula: (2 * {{inverse rank}} * {self.duration_multiplier} {{duration_multiplier}}) + {{std deviations from avg}}"
         )
         return player_scores
 
