@@ -172,8 +172,11 @@ def show_formulae(tournament: Tournament, connection: sqlite3.Connection):
     point_formula = point_scorer.get_formula()
     rank_formula = rank_scorer.get_formula()
 
-    click.echo(f"Metascore formula for point-based games:\n\t{point_formula}")
-    click.echo(f"\nMetascore formula for rank-based games:\n\t{rank_formula}")
+    if rank_formula == point_formula:
+        click.echo(f"Metascore formula:\n\t{point_formula}")
+    else:
+        click.echo(f"Metascore formula for point-based games:\n\t{point_formula}")
+        click.echo(f"\nMetascore formula for rank-based games:\n\t{rank_formula}")
 
 @cli.group(short_help="Commands for working with scores")
 def scores():

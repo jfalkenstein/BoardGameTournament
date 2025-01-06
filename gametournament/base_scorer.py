@@ -39,10 +39,10 @@ class BaseScorer(ABC):
         return score
 
     def get_formula(self):
-        formula = f"( {{Rank multiplier: {self.tournament['rank_multiplier']}}} x {{inverse rank}}"
+        formula = f"({{Rank multiplier: {self.tournament['rank_multiplier']}}} x {{inverse rank}}"
         if self.tournament['duration_multiplier'] != 0:
             formula += f" x {{Duration multiplier: {self.tournament['duration_multiplier']}}} * {{Game Hours:{self.game_hours}}}"
-        formula += " )"
+        formula += ")"
         if self.tournament['apply_bonus_or_penalty']:
             formula += f" +/- {{# Standard deviations from avg score/rank}}"
 
