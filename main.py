@@ -162,6 +162,19 @@ def add_player(tournament: Tournament, connection: sqlite3.Connection, player_na
     db.insert_players(connection, tournament['id'], [player_name])
     click.echo(f"Player {player_name} added to tournament: {tournament['name']}")
 
+@tournament.command(short_help="Displays the scoring formulae for the tournament")
+@require_dbfile
+@require_current_tournament
+def show_formulae(tournament: Tournament, connection: sqlite3.Connection):
+    all_players = db.get_players(connection, tournament['id'])
+    point_scorer = PointScorer(tournament, all_players, 2)
+    rank_scorer = PointScorer(tournament, all_players, 2)
+    point_formula = point_scorer.get_formula()
+    rank_formula = rank_scorer.get_formula()
+
+    click.echo(f"Metascore formula for point-based games:\n\t{point_formula}")
+    click.echo(f"\nMetascore formula for rank-based games:\n\t{rank_formula}")
+
 @cli.group(short_help="Commands for working with scores")
 def scores():
     pass
