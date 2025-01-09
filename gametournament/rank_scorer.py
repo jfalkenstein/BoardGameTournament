@@ -48,7 +48,7 @@ class RankScorer(BaseScorer):
 
             last_rank = rank
             inverse_rank = len(self.players) - int(rank) + 1
-            last_score = self.make_score(inverse_rank, ranks_as_scores, inverse_rank * 10)
+            last_score = self.make_metascore(inverse_rank, ranks_as_scores, inverse_rank * 10)
             player_scores[player_id] = TourneyScore(
                 player_id=player_id,
                 tournament_score=last_score,

@@ -32,7 +32,7 @@ class PointScorer(BaseScorer):
                 continue
 
             last_points = points
-            last_score = self.make_score(current_inverse_rank, game_scores, points)
+            last_score = self.make_metascore(current_inverse_rank, game_scores, points)
             player_scores[player_id] = TourneyScore(player_id=player_id, tournament_score=last_score, game_score=points, game_score_type='points')
         return player_scores
 

@@ -17,6 +17,7 @@ class Tournament(TypedDict):
     rank_multiplier: int | float
     duration_multiplier: int | float
     apply_bonus_or_penalty: bool
+    participation_award: int | float
 
 class Player(TypedDict):
     id: int

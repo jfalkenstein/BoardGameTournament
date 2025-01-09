@@ -10,6 +10,7 @@ license = "MIT"
 python = "~3.12.0"
 click = "^8.1.7"
 pyyaml = "^6.0.2"
+click-types = "^1.0.1"
 
 [tool.poetry.scripts]
 game-tournament = 'main:cli'

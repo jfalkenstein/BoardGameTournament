@@ -9,7 +9,7 @@ import click
 import yaml
 
 from gametournament import db, tournament_tools
-from gametournament.constants import DEFAULT_DURATION_MULTIPLIER, DEFAULT_RANK_MULTIPLIER
+from gametournament.constants import DEFAULT_DURATION_MULTIPLIER, DEFAULT_RANK_MULTIPLIER, DEFAULT_PARTICIPATION_AWARD
 from gametournament.db import DB_FILE
 from gametournament.models import TourneyScore, Player, Tournament
 from gametournament.point_scorer import PointScorer
@@ -90,14 +90,31 @@ def tournament():
     help="Whether to apply a bonus or penalty to metascores on basis of standard deviations from average",
     prompt=True,
 )
+@click.option(
+    "-p",
+    "--participation-award",
+    type=click.FLOAT,
+    default=DEFAULT_PARTICIPATION_AWARD,
+    show_default=True,
+    help="Baseline score awarded to all players who participated in the game.",
+    prompt=True
+)
 @require_dbfile
-def new(connection: sqlite3.Connection, name: str, rank_multiplier: float, duration_multiplier: float, bonus: bool):
+def new(
+    connection: sqlite3.Connection,
+    name: str,
+    rank_multiplier: float,
+    duration_multiplier: float,
+    bonus: bool,
+    participation_award: float
+):
     tournament = Tournament(
         name=name,
         start_date=datetime.now(),
         rank_multiplier=rank_multiplier,
         duration_multiplier=duration_multiplier,
-        apply_bonus_or_penalty=bonus
+        apply_bonus_or_penalty=bonus,
+        participation_award=participation_award,
     )
     tournament = db.create_tournament(connection, tournament)
     players = []
