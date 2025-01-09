@@ -13,11 +13,10 @@ class TourneyScore(TypedDict):
 class Tournament(TypedDict):
     name: str
     start_date: datetime
-    id: int
+    id: NotRequired[int]
     rank_multiplier: int | float
     duration_multiplier: int | float
     apply_bonus_or_penalty: bool
-    participation_award: int | float
 
 class Player(TypedDict):
     id: int

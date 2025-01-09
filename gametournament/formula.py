@@ -90,7 +90,7 @@ class Expression:
 
     def _operate(self, op: FormulaOp, other: FormulaValue | Expression) -> Expression:
         if isinstance(other, FormulaValue) and self.operator == op:
-            self.nodes.extend([Add, other])
+            self.nodes.extend([op, other])
             return self
         elif isinstance(other, (Expression, FormulaValue)):
             return Expression(self, op, other)
@@ -159,7 +159,6 @@ class Formula(ABC):
     def __init__(self, tournament: Tournament):
         self.tournament = tournament
         self.rank_multiplier = FormulaValue("Rank Multiplier", tournament['rank_multiplier'])
-        self.participation_award = FormulaValue("Participation Award", tournament['participation_award'])
         self.duration_multiplier = FormulaValue("Duration Multiplier", tournament['duration_multiplier'])
 
         self._expression = Expression()
@@ -181,4 +180,5 @@ class Formula(ABC):
         self.expression.reset()
 
     def show(self) -> str:
+        self.reset()
         return self.expression.text

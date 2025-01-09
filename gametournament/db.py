@@ -25,8 +25,7 @@ def create_tables(connection: sqlite3.Connection):
             start_date TEXT NOT NULL,
             rank_multiplier REAL NOT NULL,
             duration_multiplier REAL NOT NULL,
-            apply_bonus_or_penalty BOOLEAN NOT NULL,
-            participation_award REAL NOT NULL
+            apply_bonus_or_penalty BOOLEAN NOT NULL
         );
     """)
 
@@ -73,10 +72,9 @@ def create_tournament(connection: sqlite3.Connection, tournament: Tournament) ->
         start_date, 
         rank_multiplier, 
         duration_multiplier, 
-        apply_bonus_or_penalty,
-        participation_award
+        apply_bonus_or_penalty
     ) 
-    VALUES (?, ?, ?, ?, ?, ?) 
+    VALUES (?, ?, ?, ?, ?) 
     RETURNING id;
     """
     params = (
@@ -85,7 +83,6 @@ def create_tournament(connection: sqlite3.Connection, tournament: Tournament) ->
         tournament['rank_multiplier'],
         tournament['duration_multiplier'],
         tournament['apply_bonus_or_penalty'],
-        tournament['participation_award']
     )
     cursor.execute(sql, params)
     result = cursor.fetchone()

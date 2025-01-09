@@ -51,8 +51,6 @@ class PointFormula(Formula):
         self.expression.set(self._inverse_rank * self.rank_multiplier * self.duration_multiplier)
         if self.tournament['apply_bonus_or_penalty']:
             self._expression += self._standard_deviations_from_mean
-        if self.tournament['participation_award'] > 0:
-            self._expression += self.participation_award
 
     def set_values(self, inverse_rank: int, all_scores: list[float], this_score: float):
         self._inverse_rank.set(inverse_rank)

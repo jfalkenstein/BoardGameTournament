@@ -67,8 +67,6 @@ class RankFormula(Formula):
         self._inverse_rank = FormulaValue("Inverse Rank")
 
         self.expression.set(self._inverse_rank * self.rank_multiplier * self.duration_multiplier)
-        if self.tournament['participation_award'] > 0:
-            self._expression += self.participation_award
 
     def set_values(self, inverse_rank: int, all_scores: list[float], this_score: float):
         self._inverse_rank.set(inverse_rank)
