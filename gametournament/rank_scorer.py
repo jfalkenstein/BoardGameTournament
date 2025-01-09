@@ -64,7 +64,7 @@ class RankScorer(BaseScorer):
 class RankFormula(Formula):
     def __init__(self, tournament: Tournament):
         super().__init__(tournament)
-        self._inverse_rank = FormulaValue("Inverse Rank")
+        self._inverse_rank = FormulaValue("Inverse Normalized Rank")
 
         self.expression.set(self._inverse_rank * self.rank_multiplier * self.duration_multiplier)
 
