@@ -1,10 +1,13 @@
 import click
 
 from gametournament.base_scorer import BaseScorer
-from gametournament.models import TourneyScore
+from gametournament.formula import Formula, FormulaValue
+from gametournament.models import TourneyScore, Tournament, Player
 
 
 class RankScorer(BaseScorer):
+    def __init__(self, tournament: Tournament, players: list[Player], game_hours: float):
+        super().__init__(tournament, players, game_hours, RankFormula(tournament))
 
     def score(self) -> dict[int, TourneyScore]:
         """This function converts raw ranks (that might end up tied) to "scores" that can be added to the metascore."""
@@ -48,7 +51,7 @@ class RankScorer(BaseScorer):
 
             last_rank = rank
             inverse_rank = len(self.players) - int(rank) + 1
-            last_score = self.make_metascore(inverse_rank, ranks_as_scores, inverse_rank * 10)
+            last_score = self.make_metascore(inverse_rank, ranks_as_scores, inverse_rank)
             player_scores[player_id] = TourneyScore(
                 player_id=player_id,
                 tournament_score=last_score,
@@ -56,3 +59,16 @@ class RankScorer(BaseScorer):
                 game_score_type='rank',
             )
         return player_scores
+
+
+class RankFormula(Formula):
+    def __init__(self, tournament: Tournament):
+        super().__init__(tournament)
+        self._inverse_rank = FormulaValue("Inverse Rank")
+
+        self.expression.set(self.rank_multiplier * self._inverse_rank * self.duration_multiplier)
+        if self.tournament['participation_award'] > 0:
+            self._expression += self.participation_award
+
+    def set_values(self, inverse_rank: int, all_scores: list[float], this_score: float):
+        self._inverse_rank.set(inverse_rank)

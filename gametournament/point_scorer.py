@@ -1,10 +1,15 @@
+import statistics
+
 import click
 
 from gametournament.base_scorer import BaseScorer
-from gametournament.models import TourneyScore
+from gametournament.formula import Formula, FormulaValue
+from gametournament.models import TourneyScore, Tournament, Player
 
 
 class PointScorer(BaseScorer):
+    def __init__(self, tournament: Tournament, players: list[Player], game_hours: float):
+        super().__init__(tournament, players, game_hours, PointFormula(tournament))
 
     def score(self) -> dict[int, TourneyScore]:
         scores = [
@@ -37,5 +42,21 @@ class PointScorer(BaseScorer):
         return player_scores
 
 
+class PointFormula(Formula):
+    def __init__(self, tournament: Tournament):
+        super().__init__(tournament)
+        self._standard_deviations_from_mean = FormulaValue("Std. Deviations from Mean")
+        self._inverse_rank = FormulaValue("Inverse Rank")
 
+        self.expression.set(self.rank_multiplier * self._inverse_rank * self.duration_multiplier)
+        if self.tournament['apply_bonus_or_penalty']:
+            self._expression += self._standard_deviations_from_mean
+        if self.tournament['participation_award'] > 0:
+            self._expression += self.participation_award
 
+    def set_values(self, inverse_rank: int, all_scores: list[float], this_score: float):
+        self._inverse_rank.set(inverse_rank)
+        std = statistics.stdev(all_scores)
+        mean = statistics.mean(all_scores)
+        dist_from_mean = this_score - mean
+        self._standard_deviations_from_mean.set(dist_from_mean / std)

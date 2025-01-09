@@ -12,8 +12,8 @@ from gametournament import db, tournament_tools
 from gametournament.constants import DEFAULT_DURATION_MULTIPLIER, DEFAULT_RANK_MULTIPLIER, DEFAULT_PARTICIPATION_AWARD
 from gametournament.db import DB_FILE
 from gametournament.models import TourneyScore, Player, Tournament
-from gametournament.point_scorer import PointScorer
-from gametournament.rank_scorer import RankScorer
+from gametournament.point_scorer import PointScorer, PointFormula
+from gametournament.rank_scorer import RankScorer, RankFormula
 
 
 def require_dbfile[**P, R](func: Callable[Concatenate[sqlite3.Connection, P], R]) -> Callable[P, R]:
@@ -180,20 +180,12 @@ def add_player(tournament: Tournament, connection: sqlite3.Connection, player_na
     click.echo(f"Player {player_name} added to tournament: {tournament['name']}")
 
 @tournament.command(short_help="Displays the scoring formulae for the tournament")
-@require_dbfile
 @require_current_tournament
-def show_formulae(tournament: Tournament, connection: sqlite3.Connection):
-    all_players = db.get_players(connection, tournament['id'])
-    point_scorer = PointScorer(tournament, all_players, 2)
-    rank_scorer = PointScorer(tournament, all_players, 2)
-    point_formula = point_scorer.get_formula()
-    rank_formula = rank_scorer.get_formula()
-
-    if rank_formula == point_formula:
-        click.echo(f"Metascore formula:\n\t{point_formula}")
-    else:
-        click.echo(f"Metascore formula for point-based games:\n\t{point_formula}")
-        click.echo(f"\nMetascore formula for rank-based games:\n\t{rank_formula}")
+def show_formulae(tournament: Tournament):
+    point_formula = PointFormula(tournament).show()
+    rank_formula = RankFormula(tournament).show()
+    click.echo(f"Metascore formula for point-based games:\n\t{point_formula}")
+    click.echo(f"\nMetascore formula for rank-based games:\n\t{rank_formula}")
 
 @cli.group(short_help="Commands for working with scores")
 def scores():
