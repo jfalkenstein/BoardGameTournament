@@ -48,7 +48,7 @@ class PointFormula(Formula):
         self._standard_deviations_from_mean = FormulaValue("Std. Deviations from Mean")
         self._inverse_rank = FormulaValue("Inverse Rank")
 
-        self.expression.set(self.rank_multiplier * self._inverse_rank * self.duration_multiplier)
+        self.expression.set(self._inverse_rank * self.rank_multiplier * self.duration_multiplier)
         if self.tournament['apply_bonus_or_penalty']:
             self._expression += self._standard_deviations_from_mean
         if self.tournament['participation_award'] > 0:
