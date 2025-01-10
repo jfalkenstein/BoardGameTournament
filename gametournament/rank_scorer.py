@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import click
 
 from gametournament.base_scorer import BaseScorer
@@ -20,44 +22,55 @@ class RankScorer(BaseScorer):
                 type=click.Choice(ranks_available),
             )
             ranks.append((player['id'], int(rank)))
+        inverse_ranks = self.invert_ranks(ranks)
+        normalized_ranks = self.normalize_ranks(inverse_ranks)
+        return self.calculate(normalized_ranks)
+
+    def invert_ranks(self, ranks: list[tuple[int, int]]) -> list[tuple[int, int]]:
+        inverted = []
+        for player_id, rank in ranks:
+            inverse = len(ranks) + 1 - rank
+            inverted.append((player_id, inverse))
+
+        return inverted
+
+    def normalize_ranks(self, ranks) -> list[tuple[int, int]]:
         sorted_by_rank = sorted(ranks, key=lambda x: x[1])
-
-        next_rank = len(sorted_by_rank) + 1
+        next_tier = len(ranks)
         last_seen_rank = None
-        for i in range(len(ranks) - 1, 0, -1):
-            player_id, rank = sorted_by_rank[i]
-            if rank == last_seen_rank:
-                sorted_by_rank[i] = (player_id, next_rank)
-            else:
-                next_rank -= 1
-                sorted_by_rank[i] = (player_id, next_rank)
-                last_seen_rank = rank
-        return self.calculate(sorted_by_rank)
+        tiers = defaultdict(list)
 
-    def calculate(self, scores: list[tuple[int, float]]) -> dict[int, TourneyScore]:
+        for player_index in range(len(ranks) - 1, -1, -1):
+            player_id, rank = sorted_by_rank[player_index]
+            if rank != last_seen_rank:
+                next_tier -= 1
+            tiers[next_tier].append(player_id)
+            last_seen_rank = rank
+
+        sorted_tiers = sorted(tiers.keys())
+        normalized_ranks = []
+
+        top_tier = sorted_tiers.pop()
+        for player_id in tiers[top_tier]:
+            normalized_ranks.append((player_id, len(ranks)))
+
+        for i, tier in enumerate(sorted_tiers):
+            for player_id in tiers[tier]:
+                normalized_ranks.append((player_id, i+1))
+
+        return normalized_ranks
+
+    def calculate(self, scores: list[tuple[int, int]]) -> dict[int, TourneyScore]:
         player_scores = {}
-        ranks_as_scores = [r[1] * 10 for r in scores]
-        last_score = None
-        last_rank = None
         for player_id, rank in scores:
-            if rank == last_rank:
-                player_scores[player_id] = TourneyScore(
-                    player_id=player_id,
-                    tournament_score=last_score,
-                    game_score=last_rank,
-                    game_score_type='rank',
-                )
-                continue
-
-            last_rank = rank
-            inverse_rank = len(self.players) - int(rank) + 1
-            last_score = self.make_metascore(inverse_rank, ranks_as_scores, inverse_rank)
+            metascore = self.make_metascore(rank, [], rank)
             player_scores[player_id] = TourneyScore(
                 player_id=player_id,
-                tournament_score=last_score,
-                game_score=last_rank,
+                tournament_score=metascore,
+                game_score=rank,
                 game_score_type='rank',
             )
+
         return player_scores
 
 
