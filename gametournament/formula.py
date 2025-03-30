@@ -134,7 +134,7 @@ class Expression:
                 case Expression() if current_op is None:
                     current_value = node.compute()
                 case Expression() if current_op is not None:
-                    current_value = current_op(current_value, node.value)
+                    current_value = current_op(current_value, node.compute())
                     current_op = None
                 case FormulaOp():
                     current_op = node.op_func
@@ -156,11 +156,11 @@ Divide = FormulaOp("÷", lambda x, y: x / y)
 
 class Formula(ABC):
 
-    def __init__(self, tournament: Tournament):
+    def __init__(self, tournament: Tournament, duration: float):
         self.tournament = tournament
         self.rank_multiplier = FormulaValue("Rank Multiplier", tournament['rank_multiplier'])
         self.duration_multiplier = FormulaValue("Duration Multiplier", tournament['duration_multiplier'])
-
+        self.duration = FormulaValue("Game Hours", duration)
         self._expression = Expression()
 
     @property

@@ -9,7 +9,7 @@ from gametournament.models import TourneyScore, Tournament, Player
 
 class RankScorer(BaseScorer):
     def __init__(self, tournament: Tournament, players: list[Player], game_hours: float):
-        super().__init__(tournament, players, game_hours, RankFormula(tournament))
+        super().__init__(tournament, players, RankFormula(tournament, game_hours))
 
     def score(self) -> dict[int, TourneyScore]:
         """This function converts raw ranks (that might end up tied) to "scores" that can be added to the metascore."""
@@ -75,11 +75,11 @@ class RankScorer(BaseScorer):
 
 
 class RankFormula(Formula):
-    def __init__(self, tournament: Tournament):
-        super().__init__(tournament)
+    def __init__(self, tournament: Tournament, duration: float):
+        super().__init__(tournament, duration)
         self._inverse_rank = FormulaValue("Inverse Adjusted Rank")
 
-        self.expression.set(self._inverse_rank * self.rank_multiplier * self.duration_multiplier)
+        self.expression.set(self._inverse_rank * self.rank_multiplier * (self.duration_multiplier * self.duration))
 
     def set_values(self, inverse_rank: int, all_scores: list[float], this_score: float):
         self._inverse_rank.set(inverse_rank)

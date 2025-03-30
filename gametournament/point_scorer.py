@@ -9,7 +9,7 @@ from gametournament.models import TourneyScore, Tournament, Player
 
 class PointScorer(BaseScorer):
     def __init__(self, tournament: Tournament, players: list[Player], game_hours: float):
-        super().__init__(tournament, players, game_hours, PointFormula(tournament))
+        super().__init__(tournament, players, PointFormula(tournament, game_hours))
 
     def score(self) -> dict[int, TourneyScore]:
         scores = [
@@ -43,12 +43,12 @@ class PointScorer(BaseScorer):
 
 
 class PointFormula(Formula):
-    def __init__(self, tournament: Tournament):
-        super().__init__(tournament)
-        self._standard_deviations_from_mean = FormulaValue("Std. Deviations from Mean")
+    def __init__(self, tournament: Tournament, duration: float):
+        super().__init__(tournament, duration)
+        self._standard_deviations_from_mean = FormulaValue("+/- Std. Deviations from Mean")
         self._inverse_rank = FormulaValue("Inverse Rank")
 
-        self.expression.set(self._inverse_rank * self.rank_multiplier * self.duration_multiplier)
+        self.expression.set(self._inverse_rank * self.rank_multiplier * (self.duration_multiplier * self.duration))
         if self.tournament['apply_bonus_or_penalty']:
             self._expression += self._standard_deviations_from_mean
 

@@ -11,10 +11,9 @@ from gametournament.models import TourneyScore, Player, Tournament
 
 
 class BaseScorer(ABC):
-    def __init__(self, tournament: Tournament, players: list[Player], game_hours: float, formula:  Formula):
+    def __init__(self, tournament: Tournament, players: list[Player], formula:  Formula):
         self.tournament = tournament
         self.players = players
-        self.game_hours = game_hours
         self.formula = formula
 
     @abstractmethod

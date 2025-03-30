@@ -171,8 +171,8 @@ def add_player(tournament: Tournament, connection: sqlite3.Connection, player_na
 @tournament.command(short_help="Displays the scoring formulae for the tournament")
 @require_current_tournament
 def show_formulae(tournament: Tournament):
-    point_formula = PointFormula(tournament).show()
-    rank_formula = RankFormula(tournament).show()
+    point_formula = PointFormula(tournament, 1).show()
+    rank_formula = RankFormula(tournament, 1).show()
     click.echo(f"Metascore formula for point-based games:\n\t{point_formula}")
     click.echo(f"\nMetascore formula for rank-based games:\n\t{rank_formula}")
 
